@@ -1,0 +1,60 @@
+services:
+  # Web Service
+  - type: web
+    name: bank-ledger-api
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    
+    # Environment variables
+    envVars:
+      - key: DB_DRIVER
+        value: postgres
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bank-ledger-db
+          property: connectionString
+      - key: PORT
+        value: 8080
+      - key: GIN_MODE
+        value: release
+    
+    # Health check
+    healthCheckPath: /health
+    
+    # Auto-deploy on push to main branch
+    autoDeploy: true
+    
+    # Build configuration
+    buildCommand: docker build -t bank-ledger-api .
+    startCommand: /app/entrypoint.sh
+
+  # PostgreSQL Database
+  - type: pserv
+    name: bank-ledger-db
+    env: docker
+    plan: free
+    databaseName: bank_ledger
+    user: postgres
+    
+    # PostgreSQL configuration
+    image: postgres:15-alpine
+    
+    # Environment variables
+    envVars:
+      - key: POSTGRES_DB
+        value: bank_ledger
+      - key: POSTGRES_USER
+        value: postgres
+      - key: POSTGRES_PASSWORD
+        generateValue: true
+    
+    # Health check
+    healthCheckPath: /health
+    
+    # Persistent disk
+    disk:
+      name: postgres-data
+      mountPath: /var/lib/postgresql/data
+      sizeGB: 10

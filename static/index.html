@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bank Ledger Core - Личный кабинет</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+        <!-- Header -->
+        <header class="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
+            <div class="container mx-auto px-4 py-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-university text-3xl"></i>
+                        <h1 class="text-2xl font-bold">Bank Ledger Core</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm opacity-90">Личный кабинет</span>
+                        <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-sm"></i>
+                        </div>
+                        <button onclick="logout()" class="text-white/80 hover:text-white transition-colors">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Balance Card -->
+        <div class="mb-8">
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-blue-100 text-sm mb-1">Текущий баланс</p>
+                            <div class="flex items-baseline space-x-2">
+                                <h2 id="balance" class="text-4xl font-bold text-white">0</h2>
+                                <span id="currency" class="text-xl text-blue-100">UZS</span>
+                            </div>
+                        </div>
+                        <div class="bg-white/20 p-4 rounded-full">
+                            <i class="fas fa-wallet text-3xl text-white"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6 bg-gray-50">
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-600">Номер счета</span>
+                        <span id="account-id" class="font-mono text-gray-800">dilmurat_01</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <button onclick="openTransferModal()" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow">
+                <i class="fas fa-paper-plane text-blue-600 text-2xl mb-3"></i>
+                <h3 class="font-semibold text-gray-800">Перевести</h3>
+                <p class="text-sm text-gray-600 mt-1">Отправить деньги другому пользователю</p>
+            </button>
+            <button class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow">
+                <i class="fas fa-shopping-cart text-green-600 text-2xl mb-3"></i>
+                <h3 class="font-semibold text-gray-800">Покупки</h3>
+                <p class="text-sm text-gray-600 mt-1">Посмотреть товары маркетплейса</p>
+            </button>
+            <button onclick="openStatisticsModal()" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow">
+                <i class="fas fa-chart-line text-purple-600 text-2xl mb-3"></i>
+                <h3 class="font-semibold text-gray-800">Статистика</h3>
+                <p class="text-sm text-gray-600 mt-1">Анализ расходов и доходов</p>
+            </button>
+        </div>
+
+        <!-- Transactions History -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-800">
+                        <i class="fas fa-history text-blue-600 mr-2"></i>
+                        История операций
+                    </h3>
+                    <button class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                        Показать все
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <div id="loading" class="text-center py-8">
+                    <i class="fas fa-spinner fa-spin text-blue-600 text-2xl"></i>
+                    <p class="text-gray-600 mt-2">Загрузка истории операций...</p>
+                </div>
+                
+                <div id="transactions-container" class="hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b border-gray-200">
+                                    <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Дата</th>
+                                    <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Тип</th>
+                                    <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Сумма</th>
+                                    <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Контрагент</th>
+                                    <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Операция</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactions-list">
+                                <!-- Transactions will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="no-transactions" class="hidden text-center py-8">
+                        <i class="fas fa-inbox text-gray-400 text-4xl mb-3"></i>
+                        <p class="text-gray-600">Операций пока нет</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Transfer Modal -->
+    <div id="transferModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4">
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xl font-semibold">
+                        <i class="fas fa-paper-plane mr-2"></i>
+                        Перевод средств
+                    </h3>
+                    <button onclick="closeTransferModal()" class="text-white/80 hover:text-white transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <form id="transferForm" class="p-6">
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        ID получателя
+                    </label>
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            id="recipientId" 
+                            name="recipientId"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            placeholder="user_02 или 3 (числовой ID)"
+                            required
+                        >
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                            <i class="fas fa-user text-gray-400"></i>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Можно ввести user_id (например: user_02) или числовой ID аккаунта</p>
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Сумма перевода
+                    </label>
+                    <div class="relative">
+                        <input 
+                            type="number" 
+                            id="amount" 
+                            name="amount"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            placeholder="0"
+                            min="1"
+                            step="1"
+                            required
+                        >
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                            <span class="text-gray-500 font-medium">UZS</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex space-x-3">
+                    <button 
+                        type="submit" 
+                        class="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center"
+                    >
+                        <i class="fas fa-paper-plane mr-2"></i>
+                        Отправить
+                    </button>
+                    <button 
+                        type="button" 
+                        onclick="closeTransferModal()"
+                        class="flex-1 bg-gray-200 text-gray-800 py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                    >
+                        Отмена
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notification" class="fixed top-4 right-4 hidden z-50">
+        <div class="bg-white rounded-lg shadow-lg border-l-4 p-4 max-w-sm">
+            <div class="flex items-center">
+                <div id="notificationIcon" class="flex-shrink-0 mr-3"></div>
+                <div class="flex-1">
+                    <p id="notificationMessage" class="text-sm font-medium text-gray-900"></p>
+                </div>
+                <button onclick="hideNotification()" class="ml-3 text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Modal -->
+    <div id="statisticsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 rounded-t-xl sticky top-0">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xl font-semibold">
+                        <i class="fas fa-chart-line mr-2"></i>
+                        Статистика операций
+                    </h3>
+                    <button onclick="closeStatisticsModal()" class="text-white/80 hover:text-white transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-blue-600 font-medium">Всего операций</p>
+                                <p id="totalTransactions" class="text-2xl font-bold text-blue-900">0</p>
+                            </div>
+                            <i class="fas fa-exchange-alt text-blue-500 text-2xl"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-green-600 font-medium">Общие доходы</p>
+                                <p id="totalIncome" class="text-2xl font-bold text-green-900">0 UZS</p>
+                            </div>
+                            <i class="fas fa-arrow-down text-green-500 text-2xl"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-red-50 p-4 rounded-lg border border-red-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-red-600 font-medium">Общие расходы</p>
+                                <p id="totalExpenses" class="text-2xl font-bold text-red-900">0 UZS</p>
+                            </div>
+                            <i class="fas fa-arrow-up text-red-500 text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Pie Chart -->
+                    <div class="bg-white p-6 rounded-lg border border-gray-200">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4">
+                            <i class="fas fa-chart-pie text-purple-600 mr-2"></i>
+                            Расходы по категориям
+                        </h4>
+                        <div class="relative h-64">
+                            <canvas id="expenseChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Bar Chart -->
+                    <div class="bg-white p-6 rounded-lg border border-gray-200">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4">
+                            <i class="fas fa-chart-bar text-purple-600 mr-2"></i>
+                            Доходы vs Расходы
+                        </h4>
+                        <div class="relative h-64">
+                            <canvas id="incomeExpenseChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transaction Categories -->
+                <div class="mt-6 bg-gray-50 p-6 rounded-lg">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-list text-purple-600 mr-2"></i>
+                        Детализация по категориям
+                    </h4>
+                    <div id="categoryDetails" class="space-y-2">
+                        <!-- Category details will be inserted here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white mt-12">
+        <div class="container mx-auto px-4 py-6">
+            <div class="text-center">
+                <p class="text-sm opacity-75">© 2026 Bank Ledger Core. Все права защищены.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api/v1';
+        let USER_ID = 'dilmurat_01'; // Will be updated after auth check
+
+        // Chart instances
+        let expenseChart = null;
+        let incomeExpenseChart = null;
+
+        // Statistics data
+        let statisticsData = {
+            transactions: [],
+            categories: {},
+            totalIncome: 0,
+            totalExpenses: 0,
+            totalTransactions: 0
+        };
+
+        // Check authentication on page load
+        async function checkAuth() {
+            try {
+                const response = await fetch(`${API_BASE}/accounts`, {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    // Not authenticated, redirect to login
+                    window.location.href = '/login';
+                    return false;
+                }
+                
+                // Get current user info
+                const accounts = await response.json();
+                if (accounts.length > 0) {
+                    USER_ID = accounts[0].user_id;
+                    document.getElementById('account-id').textContent = USER_ID;
+                }
+                
+                return true;
+            } catch (error) {
+                window.location.href = '/login';
+                return false;
+            }
+        }
+
+        // Format date for display
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString('ru-RU', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Format amount with spaces
+        function formatAmount(amount) {
+            return Number(amount).toLocaleString('ru-RU');
+        }
+
+        // Get transaction type icon and color
+        function getTransactionTypeInfo(type) {
+            if (type === 'Расход') {
+                return {
+                    icon: 'fa-arrow-up',
+                    color: 'text-red-600',
+                    bgColor: 'bg-red-100'
+                };
+            } else {
+                return {
+                    icon: 'fa-arrow-down',
+                    color: 'text-green-600',
+                    bgColor: 'bg-green-100'
+                };
+            }
+        }
+
+        // Load account data
+        async function loadAccountData() {
+            try {
+                const response = await fetch(`${API_BASE}/accounts/${USER_ID}`, {
+                    credentials: 'include'
+                });
+                if (!response.ok) throw new Error('Failed to load account data');
+                
+                const account = await response.json();
+                document.getElementById('balance').textContent = formatAmount(account.balance);
+                document.getElementById('currency').textContent = account.currency;
+                document.getElementById('account-id').textContent = account.user_id;
+            } catch (error) {
+                console.error('Error loading account data:', error);
+                document.getElementById('balance').textContent = 'Ошибка';
+            }
+        }
+
+        // Load transaction history
+        async function loadTransactionHistory() {
+            try {
+                const response = await fetch(`${API_BASE}/users/${USER_ID}/history`, {
+                    credentials: 'include'
+                });
+                if (!response.ok) throw new Error('Failed to load transaction history');
+                
+                const data = await response.json();
+                const transactions = data.history || [];
+                
+                // Update statistics data
+                statisticsData.transactions = transactions;
+                statisticsData.categories = {};
+                statisticsData.totalIncome = 0;
+                statisticsData.totalExpenses = 0;
+                statisticsData.totalTransactions = transactions.length;
+                
+                // Process transactions for statistics
+                transactions.forEach(transaction => {
+                    const amount = parseFloat(transaction.amount);
+                    const category = transaction.counterparty === 'marketplace' ? 'Покупки' : 
+                                   transaction.type === 'Расход' ? 'Переводы' : 'Поступления';
+                    
+                    if (transaction.type === 'Расход') {
+                        statisticsData.totalExpenses += amount;
+                        if (!statisticsData.categories[category]) {
+                            statisticsData.categories[category] = 0;
+                        }
+                        statisticsData.categories[category] += amount;
+                    } else {
+                        statisticsData.totalIncome += amount;
+                    }
+                });
+                
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('transactions-container').classList.remove('hidden');
+                
+                if (transactions.length === 0) {
+                    document.getElementById('transactions-list').classList.add('hidden');
+                    document.getElementById('no-transactions').classList.remove('hidden');
+                    return;
+                }
+                
+                const transactionsList = document.getElementById('transactions-list');
+                transactionsList.innerHTML = '';
+                
+                transactions.forEach(transaction => {
+                    const typeInfo = getTransactionTypeInfo(transaction.type);
+                    const row = document.createElement('tr');
+                    row.className = 'border-b border-gray-100 hover:bg-gray-50 transition-colors';
+                    
+                    row.innerHTML = `
+                        <td class="py-3 px-4">
+                            <div class="text-sm text-gray-900">${formatDate(transaction.date)}</div>
+                        </td>
+                        <td class="py-3 px-4">
+                            <div class="flex items-center space-x-2">
+                                <div class="${typeInfo.bgColor} p-2 rounded-full">
+                                    <i class="fas ${typeInfo.icon} ${typeInfo.color} text-xs"></i>
+                                </div>
+                                <span class="text-sm font-medium text-gray-900">${transaction.type}</span>
+                            </div>
+                        </td>
+                        <td class="py-3 px-4">
+                            <div class="text-sm font-semibold ${typeInfo.color}">
+                                ${transaction.type === 'Расход' ? '-' : '+'}${formatAmount(transaction.amount)} UZS
+                            </div>
+                        </td>
+                        <td class="py-3 px-4">
+                            <div class="text-sm text-gray-900">${transaction.counterparty}</div>
+                        </td>
+                        <td class="py-3 px-4">
+                            <div class="text-xs text-gray-500 font-mono">${transaction.reference}</div>
+                        </td>
+                    `;
+                    
+                    transactionsList.appendChild(row);
+                });
+                
+            } catch (error) {
+                console.error('Error loading transaction history:', error);
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('transactions-container').classList.add('hidden');
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', async () => {
+            const isAuthenticated = await checkAuth();
+            if (isAuthenticated) {
+                await Promise.all([
+                    loadAccountData(),
+                    loadTransactionHistory()
+                ]);
+            }
+        });
+
+        // Modal functions
+        function openTransferModal() {
+            document.getElementById('transferModal').classList.remove('hidden');
+            document.getElementById('transferModal').classList.add('flex');
+        }
+
+        function closeTransferModal() {
+            document.getElementById('transferModal').classList.add('hidden');
+            document.getElementById('transferModal').classList.remove('flex');
+            document.getElementById('transferForm').reset();
+        }
+
+        // Send money function
+        async function sendMoney(recipientId, amount) {
+            try {
+                // Determine if recipientId is numeric (ID) or text (user_id)
+                let url, requestBody;
+                
+                if (/^\d+$/.test(recipientId)) {
+                    // Numeric ID - use account IDs
+                    url = `${API_BASE}/transfers/money`;
+                    requestBody = {
+                        from_account_id: null, // We'll need to get this first
+                        to_account_id: parseInt(recipientId),
+                        amount: amount.toString()
+                    };
+                    
+                    // Get current user's account ID first
+                    const accountResponse = await fetch(`${API_BASE}/accounts/${USER_ID}`, {
+                        credentials: 'include'
+                    });
+                    if (!accountResponse.ok) {
+                        showNotification('Не удалось получить данные аккаунта', 'error');
+                        return;
+                    }
+                    const userAccount = await accountResponse.json();
+                    requestBody.from_account_id = userAccount.id;
+                } else {
+                    // Text user_id - use user IDs
+                    url = `${API_BASE}/transfers/money/users`;
+                    requestBody = {
+                        from_user_id: USER_ID,
+                        to_user_id: recipientId,
+                        amount: amount.toString()
+                    };
+                }
+
+                console.log('Sending request to:', url);
+                console.log('Request body:', requestBody);
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(requestBody)
+                });
+
+                const data = await response.json();
+                console.log('Response:', data);
+
+                if (response.ok && data.status === 'completed') {
+                    showNotification('Перевод успешно выполнен!', 'success');
+                    closeTransferModal();
+                    // Refresh data immediately
+                    await Promise.all([
+                        loadAccountData(),
+                        loadTransactionHistory()
+                    ]);
+                } else {
+                    showNotification(data.message || 'Ошибка перевода', 'error');
+                }
+            } catch (error) {
+                console.error('Transfer error:', error);
+                showNotification('Ошибка соединения с сервером', 'error');
+            }
+        }
+
+        // Form submission
+        document.getElementById('transferForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const recipientId = document.getElementById('recipientId').value;
+            const amount = document.getElementById('amount').value;
+            
+            await sendMoney(recipientId, amount);
+        });
+
+        // Notification
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            const icon = document.getElementById('notificationIcon');
+            const messageEl = document.getElementById('notificationMessage');
+            const notificationDiv = notification.querySelector('div');
+
+            messageEl.textContent = message;
+
+            if (type === 'success') {
+                icon.innerHTML = '<i class="fas fa-check-circle text-green-500 text-xl"></i>';
+                notificationDiv.className = 'bg-white rounded-lg shadow-lg border-l-4 border-green-500 p-4 max-w-sm';
+            } else {
+                icon.innerHTML = '<i class="fas fa-exclamation-circle text-red-500 text-xl"></i>';
+                notificationDiv.className = 'bg-white rounded-lg shadow-lg border-l-4 border-red-500 p-4 max-w-sm';
+            }
+
+            notification.classList.remove('hidden');
+            setTimeout(hideNotification, 5000);
+        }
+
+        function hideNotification() {
+            document.getElementById('notification').classList.add('hidden');
+        }
+
+        // Statistics Modal Functions
+        function openStatisticsModal() {
+            document.getElementById('statisticsModal').classList.remove('hidden');
+            document.getElementById('statisticsModal').classList.add('flex');
+            updateStatistics();
+        }
+
+        function closeStatisticsModal() {
+            document.getElementById('statisticsModal').classList.add('hidden');
+            document.getElementById('statisticsModal').classList.remove('flex');
+        }
+
+        function updateStatistics() {
+            // Update summary cards
+            document.getElementById('totalTransactions').textContent = statisticsData.totalTransactions;
+            document.getElementById('totalIncome').textContent = formatAmount(statisticsData.totalIncome.toString()) + ' UZS';
+            document.getElementById('totalExpenses').textContent = formatAmount(statisticsData.totalExpenses.toString()) + ' UZS';
+
+            // Update charts
+            updateExpenseChart();
+            updateIncomeExpenseChart();
+            updateCategoryDetails();
+        }
+
+        function updateExpenseChart() {
+            const ctx = document.getElementById('expenseChart').getContext('2d');
+            
+            if (expenseChart) {
+                expenseChart.destroy();
+            }
+
+            const categories = Object.keys(statisticsData.categories);
+            const values = Object.values(statisticsData.categories);
+
+            expenseChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: categories.length > 0 ? categories : ['Нет расходов'],
+                    datasets: [{
+                        data: values.length > 0 ? values : [1],
+                        backgroundColor: [
+                            '#3B82F6', // blue
+                            '#10B981', // green
+                            '#F59E0B', // yellow
+                            '#EF4444', // red
+                            '#8B5CF6', // purple
+                            '#EC4899', // pink
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 15,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = formatAmount(context.parsed.toString());
+                                    return label + ': ' + value + ' UZS';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateIncomeExpenseChart() {
+            const ctx = document.getElementById('incomeExpenseChart').getContext('2d');
+            
+            if (incomeExpenseChart) {
+                incomeExpenseChart.destroy();
+            }
+
+            incomeExpenseChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Доходы', 'Расходы'],
+                    datasets: [{
+                        label: 'Сумма (UZS)',
+                        data: [statisticsData.totalIncome, statisticsData.totalExpenses],
+                        backgroundColor: [
+                            '#10B981', // green for income
+                            '#EF4444'  // red for expenses
+                        ],
+                        borderColor: [
+                            '#059669',
+                            '#DC2626'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatAmount(value.toString());
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = formatAmount(context.parsed.y.toString());
+                                    return context.label + ': ' + value + ' UZS';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateCategoryDetails() {
+            const categoryDetails = document.getElementById('categoryDetails');
+            categoryDetails.innerHTML = '';
+
+            if (Object.keys(statisticsData.categories).length === 0) {
+                categoryDetails.innerHTML = '<p class="text-gray-500 text-center">Нет данных о расходах</p>';
+                return;
+            }
+
+            Object.entries(statisticsData.categories).forEach(([category, amount]) => {
+                const percentage = statisticsData.totalExpenses > 0 
+                    ? ((amount / statisticsData.totalExpenses) * 100).toFixed(1)
+                    : 0;
+
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200';
+                categoryDiv.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-3 h-3 bg-purple-500 rounded-full"></div>
+                        <span class="font-medium text-gray-800">${category}</span>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-semibold text-gray-900">${formatAmount(amount.toString())} UZS</div>
+                        <div class="text-sm text-gray-500">${percentage}%</div>
+                    </div>
+                `;
+                categoryDetails.appendChild(categoryDiv);
+            });
+        }
+
+        // Logout function
+        async function logout() {
+            try {
+                await fetch(`${API_BASE}/auth/logout`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+            
+            window.location.href = '/login';
+        }
+    </script>
+</body>
+</html>

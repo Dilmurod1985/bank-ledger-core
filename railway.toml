@@ -1,0 +1,33 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 100
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
+startCommand = "/app/entrypoint.sh"
+
+[[services]]
+name = "bank-ledger-api"
+
+[services.variables]
+DB_DRIVER = "postgres"
+PORT = "8080"
+GIN_MODE = "release"
+
+[[services]]
+name = "bank-ledger-db"
+
+[services.variables]
+POSTGRES_DB = "bank_ledger"
+POSTGRES_USER = "postgres"
+POSTGRES_PASSWORD = "secure_password_change_me"
+
+[environments.production]
+[services.variables]
+DATABASE_URL = "${{services.bank-ledger-db.DATABASE_URL}}"
+
+[environments.staging]
+[services.variables]
+DATABASE_URL = "${{services.bank-ledger-db.DATABASE_URL}}"
