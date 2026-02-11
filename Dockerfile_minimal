@@ -1,0 +1,10 @@
+FROM golang:1.21-alpine
+
+WORKDIR /app
+
+COPY go_test.mod go.mod
+COPY main_test.go main.go
+
+RUN go build -o main .
+
+CMD ["./main"]
