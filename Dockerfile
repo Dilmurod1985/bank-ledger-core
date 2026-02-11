@@ -8,6 +8,7 @@ WORKDIR /app
 
 # Copy go mod files
 COPY go.mod go.sum ./
+ENV GOPROXY=direct
 RUN go mod download
 
 # Copy source code
